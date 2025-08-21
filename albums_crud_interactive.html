@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JSONPlaceholder /albums — CRUD Demo Interattiva</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 24px; }
+    h1 { margin-bottom: 8px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    label { font-size: 12px; color: #555; display: block; margin-bottom: 4px; }
+    input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
+    button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 8px; background: #fafafa; cursor: pointer; }
+    button.primary { background: #0ea5e9; color: white; border-color: #0ea5e9; }
+    button:hover { filter: brightness(0.98); }
+    pre { background: #0b1020; color: #e5e7eb; padding: 12px; border-radius: 12px; overflow: auto; max-height: 50vh; }
+    .muted { color: #666; font-size: 12px; }
+    .status { font-weight: 600; }
+    .footer { margin-top: 16px; font-size: 12px; color: #555; }
+  </style>
+</head>
+<body>
+  <h1>JSONPlaceholder /albums — CRUD Interattiva</h1>
+  <p class="muted">Endpoint: <code>https://jsonplaceholder.typicode.com/albums</code> — Le operazioni di scrittura sono simulate (non persistono).</p>
+
+  <div class="grid">
+    <!-- READ -->
+    <div class="card">
+      <h3>READ</h3>
+      <div class="row">
+        <div style="flex:1">
+          <label for="readId">ID (opzionale: se vuoto → elenco)</label>
+          <input id="readId" type="number" min="1" placeholder="1" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="primary" onclick="read()">Esegui GET</button>
+        <button onclick="readFirst3()">GET (primi 3)</button>
+      </div>
+    </div>
+
+    <!-- CREATE -->
+    <div class="card">
+      <h3>CREATE (POST)</h3>
+      <label for="createUserId">userId</label>
+      <input id="createUserId" type="number" min="1" value="1" />
+      <label for="createTitle">title</label>
+      <input id="createTitle" type="text" placeholder="Nuovo album (demo)" value="Nuovo album (demo)" />
+      <div class="row" style="margin-top:8px">
+        <button class="primary" onclick="createAlbum()">POST /albums</button>
+      </div>
+    </div>
+
+    <!-- UPDATE -->
+    <div class="card">
+      <h3>UPDATE (PUT)</h3>
+      <label for="putId">id</label>
+      <input id="putId" type="number" min="1" value="1" />
+      <label for="putUserId">userId</label>
+      <input id="putUserId" type="number" min="1" value="1" />
+      <label for="putTitle">title</label>
+      <input id="putTitle" type="text" value="Album aggiornato via PUT" />
+      <div class="row" style="margin-top:8px">
+        <button class="primary" onclick="updateAlbum()">PUT /albums/{id}</button>
+      </div>
+    </div>
+
+    <!-- PATCH -->
+    <div class="card">
+      <h3>PATCH (parziale)</h3>
+      <label for="patchId">id</label>
+      <input id="patchId" type="number" min="1" value="1" />
+      <label for="patchTitle">title</label>
+      <input id="patchTitle" type="text" value="Titolo patch" />
+      <div class="row" style="margin-top:8px">
+        <button class="primary" onclick="patchAlbum()">PATCH /albums/{id}</button>
+      </div>
+    </div>
+
+    <!-- DELETE -->
+    <div class="card">
+      <h3>DELETE</h3>
+      <label for="deleteId">id</label>
+      <input id="deleteId" type="number" min="1" value="1" />
+      <div class="row" style="margin-top:8px">
+        <button class="primary" onclick="deleteAlbum()">DELETE /albums/{id}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Richiesta</h3>
+    <div class="row">
+      <div style="flex:1">
+        <div class="muted">Metodo & URL</div>
+        <div id="reqMeta"><span class="status">—</span></div>
+      </div>
+      <div style="flex:1">
+        <div class="muted">Headers</div>
+        <pre id="reqHeaders">{}</pre>
+      </div>
+    </div>
+    <div class="muted">Body</div>
+    <pre id="reqBody">null</pre>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Risposta</h3>
+    <div class="row">
+      <div style="flex:1">
+        <div class="muted">Status</div>
+        <div id="resStatus"><span class="status">—</span></div>
+      </div>
+      <div style="flex:1">
+        <div class="muted">Headers</div>
+        <pre id="resHeaders">{}</pre>
+      </div>
+    </div>
+    <div class="muted">Body</div>
+    <pre id="output">—</pre>
+  </div>
+
+  <div class="footer">
+    Suggerimento: apri la Console del browser (F12) per vedere eventuali errori di rete.
+  </div>
+
+  <script>
+    const BASE = "https://jsonplaceholder.typicode.com/albums";
+
+    function showReq({method, url, headers, body}) {
+      document.getElementById("reqMeta").innerHTML = `<span class="status">${method}</span> ${url}`;
+      document.getElementById("reqHeaders").textContent = JSON.stringify(headers || {}, null, 2);
+      document.getElementById("reqBody").textContent = body ? JSON.stringify(body, null, 2) : "null";
+    }
+
+    function showRes(res, data, headersObj) {
+      document.getElementById("resStatus").innerHTML = `<span class="status">${res.status}</span> ${res.statusText}`;
+      document.getElementById("resHeaders").textContent = JSON.stringify(headersObj, null, 2);
+      document.getElementById("output").textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    }
+
+    function headersToObject(headers) {
+      const o = {};
+      headers.forEach((v, k) => { o[k] = v; });
+      return o;
+    }
+
+    async function doFetch(method, path = "", body = null) {
+      const url = path ? `${BASE}/${path}` : BASE;
+      const headers = body ? { "Content-Type": "application/json" } : {};
+      showReq({ method, url, headers, body });
+      const res = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const ct = res.headers.get("content-type") || "";
+      let data;
+      try {
+        data = ct.includes("application/json") ? await res.json() : await res.text();
+      } catch (_) {
+        data = null;
+      }
+      showRes(res, data, headersToObject(res.headers));
+      return { res, data };
+    }
+
+    // --- Operations ---
+    async function read() {
+      const id = document.getElementById("readId").value.trim();
+      await doFetch("GET", id);
+    }
+
+    async function readFirst3() {
+      const { data } = await doFetch("GET", "");
+      if (Array.isArray(data)) {
+        document.getElementById("output").textContent = JSON.stringify(data.slice(0, 3), null, 2);
+      }
+    }
+
+    async function createAlbum() {
+      const userId = parseInt(document.getElementById("createUserId").value || "1", 10);
+      const title = document.getElementById("createTitle").value || "Nuovo album (demo)";
+      await doFetch("POST", "", { userId, title });
+    }
+
+    async function updateAlbum() {
+      const id = parseInt(document.getElementById("putId").value || "1", 10);
+      const userId = parseInt(document.getElementById("putUserId").value || "1", 10);
+      const title = document.getElementById("putTitle").value || "Album aggiornato via PUT";
+      await doFetch("PUT", String(id), { userId, id, title });
+    }
+
+    async function patchAlbum() {
+      const id = parseInt(document.getElementById("patchId").value || "1", 10);
+      const title = document.getElementById("patchTitle").value || "Titolo patch";
+      await doFetch("PATCH", String(id), { title });
+    }
+
+    async function deleteAlbum() {
+      const id = parseInt(document.getElementById("deleteId").value || "1", 10);
+      await doFetch("DELETE", String(id));
+    }
+  </script>
+</body>
+</html>
